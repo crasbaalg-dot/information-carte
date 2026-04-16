@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { LanguageSelector } from './components/LanguageSelector';
 import { InfoForm } from './components/InfoForm';
 import { CardA4 } from './components/CardA4';
+import { AboutPage } from './components/AboutPage';
 import { Language, FormData, translations } from './translations';
 import { motion } from 'motion/react';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Info } from 'lucide-react';
 import { cn } from './lib/utils';
 
 const initialData: FormData = {
@@ -22,6 +23,7 @@ export default function App() {
   const [lang, setLang] = useState<Language | null>(null);
   const [formData, setFormData] = useState<FormData>(initialData);
   const [showPreview, setShowPreview] = useState(false);
+  const [view, setView] = useState<'form' | 'about'>('form');
 
   const handlePrint = () => {
     window.print();
@@ -45,7 +47,13 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-4">
             <button 
-              onClick={() => setLang(null)}
+              onClick={() => {
+                if (view === 'about') {
+                  setView('form');
+                } else {
+                  setLang(null);
+                }
+              }}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
               title={t.actions.back}
             >
@@ -64,76 +72,94 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2 text-[#ED1C24] font-bold">
-            <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-[10px] sm:text-xs uppercase tracking-wider">{t.header.location}</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => setView(view === 'about' ? 'form' : 'about')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                view === 'about' 
+                  ? "bg-[#ED1C24] text-white" 
+                  : "text-gray-500 hover:bg-gray-100"
+              )}
+            >
+              <Info className="w-4 h-4" />
+              <span className="hidden sm:inline">{t.actions.about}</span>
+            </button>
+            <div className="flex items-center gap-1 sm:gap-2 text-[#ED1C24] font-bold">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-[10px] sm:text-xs uppercase tracking-wider">{t.header.location}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 no-print">
-        {/* Mobile Preview Toggle */}
-        <div className="lg:hidden flex justify-center mb-2">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 shadow-sm hover:bg-gray-50 transition-all"
+      {view === 'about' ? (
+        <AboutPage lang={lang} />
+      ) : (
+        <main className="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 no-print">
+          {/* Mobile Preview Toggle */}
+          <div className="lg:hidden flex justify-center mb-2">
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 shadow-sm hover:bg-gray-50 transition-all"
+            >
+              {showPreview 
+                ? (isAr ? "إخفاء المعاينة" : "Masquer l'aperçu")
+                : (isAr ? "إظهار المعاينة" : "Afficher l'aperçu")}
+            </button>
+          </div>
+
+          {/* Left Sidebar: Form */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={cn("space-y-6", showPreview ? "hidden lg:block" : "block")}
           >
-            {showPreview 
-              ? (isAr ? "إخفاء المعاينة" : "Masquer l'aperçu")
-              : (isAr ? "إظهار المعاينة" : "Afficher l'aperçu")}
-          </button>
-        </div>
-
-        {/* Left Sidebar: Form */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className={cn("space-y-6", showPreview ? "hidden lg:block" : "block")}
-        >
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <div className="w-2 h-6 bg-[#ED1C24] rounded-full" />
-              {t.title}
-            </h2>
-            <InfoForm 
-              data={formData} 
-              onChange={setFormData} 
-              onPrint={handlePrint}
-              onReset={handleReset}
-              lang={lang}
-            />
-          </div>
-          
-          <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
-            <p className="text-xs text-red-600 font-medium leading-relaxed">
-              {isAr 
-                ? "تأكد من صحة المعلومات المدخلة. يمكنك معاينة البطاقة مباشرة على الجهة المقابلة."
-                : "Assurez-vous que les informations saisies sont correctes. Vous pouvez prévisualiser la carte directement sur le côté opposé."}
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Right Content: Preview */}
-        <div className={cn(
-          "relative flex flex-col items-center overflow-hidden",
-          !showPreview && "hidden lg:flex"
-        )}>
-          <div className="lg:sticky lg:top-24 w-full flex flex-col items-center min-h-[500px]">
-            <div className="mb-4 flex items-center gap-2 text-gray-400 text-sm font-medium uppercase tracking-widest">
-              <span>Preview</span>
-              <div className="w-12 h-px bg-gray-200" />
-              <span>A4</span>
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <div className="w-2 h-6 bg-[#ED1C24] rounded-full" />
+                {t.title}
+              </h2>
+              <InfoForm 
+                data={formData} 
+                onChange={setFormData} 
+                onPrint={handlePrint}
+                onReset={handleReset}
+                lang={lang}
+              />
             </div>
             
-            {/* The actual card container with responsive scaling */}
-            <div className="w-full flex justify-center items-start overflow-x-auto pb-8">
-              <div className="origin-top scale-[0.35] sm:scale-[0.45] md:scale-[0.55] lg:scale-[0.65] xl:scale-[0.8] shadow-2xl rounded-sm overflow-hidden bg-white">
-                <CardA4 id="preview-card" data={formData} lang={lang} />
+            <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+              <p className="text-xs text-red-600 font-medium leading-relaxed">
+                {isAr 
+                  ? "تأكد من صحة المعلومات المدخلة. يمكنك معاينة البطاقة مباشرة على الجهة المقابلة."
+                  : "Assurez-vous que les informations saisies sont correctes. Vous pouvez prévisualiser la carte directement sur le côté opposé."}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Right Content: Preview */}
+          <div className={cn(
+            "relative flex flex-col items-center overflow-hidden",
+            !showPreview && "hidden lg:flex"
+          )}>
+            <div className="lg:sticky lg:top-24 w-full flex flex-col items-center min-h-[500px]">
+              <div className="mb-4 flex items-center gap-2 text-gray-400 text-sm font-medium uppercase tracking-widest">
+                <span>Preview</span>
+                <div className="w-12 h-px bg-gray-200" />
+                <span>A4</span>
+              </div>
+              
+              {/* The actual card container with responsive scaling */}
+              <div className="w-full flex justify-center items-start overflow-x-auto pb-8">
+                <div className="origin-top scale-[0.35] sm:scale-[0.45] md:scale-[0.55] lg:scale-[0.65] xl:scale-[0.8] shadow-2xl rounded-sm overflow-hidden bg-white">
+                  <CardA4 id="preview-card" data={formData} lang={lang} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      )}
 
       {/* Container specifically for printing - visible only during print */}
       <div className="print-only">
